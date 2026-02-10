@@ -6,11 +6,9 @@ services:
       - registry-data:/var/lib/registry
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
-  openclaw:
-    build:
-      context: .
-      args:
-        - OPENCLAW_BETA=${OPENCLAW_BETA:-false}
+    openclaw:
+    image: coollabsio/openclaw:latest          # ← هنا التغيير الرئيسي: image جاهزة بدل build
+    # لو عايز beta version: coollabsio/openclaw:beta
     restart: on-failure:10
     ulimits:
       nofile:
@@ -42,7 +40,24 @@ services:
       # Tell the binary where to look for state/config
       OPENCLAW_STATE_DIR: /data/.openclaw
       OPENCLAW_WORKSPACE: /data/openclaw-workspace
-
+      # Coolify-specific vars (تُضاف أوتوماتيك غالبًا، لكن مفيد تضيفها)
+      COOLIFY_FQDN: ${SERVICE_FQDN_OPENCLAW}
+      COOLIFY_URL: ${COOLIFY_URL}
+      COOLIFY_BRANCH: ${COOLIFY_BRANCH}
+      # باقي الـ env اللي كانت موجودة (API keys إلخ) هتفضل من .env
+    volumes:
+      - openclaw-data:/data
+      - openclaw-config:/root/.openclaw
+      - openclaw-workspace:/root/openclaw-workspace
+    depends_on:
+      - docker-proxy
+    # command: غالبًا مش محتاجه، الـ image الجاهزة بتشتغل bootstrap.sh أوتوماتيك
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
       # API Keys injected from .env or Coolify
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       MINIMAX_API_KEY: ${MINIMAX_API_KEY}
