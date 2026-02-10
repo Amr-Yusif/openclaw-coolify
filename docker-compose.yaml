@@ -6,9 +6,9 @@ services:
       - registry-data:/var/lib/registry
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
-    openclaw:
-    image: coollabsio/openclaw:latest          # ← هنا التغيير الرئيسي: image جاهزة بدل build
-    # لو عايز beta version: coollabsio/openclaw:beta
+
+  openclaw:
+    image: coollabsio/openclaw:latest  # أو :beta لو عايز النسخة التجريبية
     restart: on-failure:10
     ulimits:
       nofile:
@@ -40,25 +40,11 @@ services:
       # Tell the binary where to look for state/config
       OPENCLAW_STATE_DIR: /data/.openclaw
       OPENCLAW_WORKSPACE: /data/openclaw-workspace
-      # Coolify-specific vars (تُضاف أوتوماتيك غالبًا، لكن مفيد تضيفها)
+      # Coolify-specific vars (غالباً بتتحقن أوتوماتيك، لكن إضافتها explicit أفضل)
       COOLIFY_FQDN: ${SERVICE_FQDN_OPENCLAW}
       COOLIFY_URL: ${COOLIFY_URL}
       COOLIFY_BRANCH: ${COOLIFY_BRANCH}
-      # باقي الـ env اللي كانت موجودة (API keys إلخ) هتفضل من .env
-    volumes:
-      - openclaw-data:/data
-      - openclaw-config:/root/.openclaw
-      - openclaw-workspace:/root/openclaw-workspace
-    depends_on:
-      - docker-proxy
-    # command: غالبًا مش محتاجه، الـ image الجاهزة بتشتغل bootstrap.sh أوتوماتيك
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18789/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
-      # API Keys injected from .env or Coolify
+      # API Keys (من .env أو Coolify)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       MINIMAX_API_KEY: ${MINIMAX_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -68,12 +54,10 @@ services:
       MOONSHOT_API_KEY: ${KIMI_API_KEY}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       SANDBOX_CONTAINER: ${SANDBOX_CONTAINER:-false}
-      
       # Optional integrations
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       NANOBANANA_API_KEY: ${NANOBANANA_API_KEY}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
-
       SERVICE_URL_OPENCLAW_18789: null
       SERVICE_URL_OPENCLAWWEBHOOK_8788: null
       BASE_URL: 'https://${SERVICE_FQDN_OPENCLAW}'
@@ -85,7 +69,6 @@ services:
       # Fix for EMFILE/Inotify issues in Docker
       CHOKIDAR_USEPOLLING: "true"
       # Public URL Access
-
       CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN}
       # Deployment & Git
       VERCEL_ORG_ID: ${VERCEL_ORG_ID}
@@ -96,19 +79,13 @@ services:
       GITHUB_EMAIL: ${GITHUB_EMAIL}
       # Optional
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
-
     volumes:
       - openclaw-data:/data
       - openclaw-config:/root/.openclaw
       - openclaw-workspace:/root/openclaw-workspace
-
-      # Secure: Socket mount removed in favor of proxy
-      # - /var/run/docker.sock:/var/run/docker.sock
-
     depends_on:
       - docker-proxy
-
-    command: ["bash", "/app/scripts/bootstrap.sh"]
+    # command: ["bash", "/app/scripts/bootstrap.sh"]  # ← مش ضروري في الـ image ده، لكن لو عايز override خليه
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18789/"]
       interval: 30s
@@ -123,14 +100,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       # Security: Only enable necessary Docker APIs
-      POST: 1       # Create containers
-      CONTAINERS: 1 # List/manage containers
-      IMAGES: 1     # Pull images
-      NETWORKS: 1   # Connect to networks
-      INFO: 1       # Version check
+      POST: 1        # Create containers
+      CONTAINERS: 1  # List/manage containers
+      IMAGES: 1      # Pull images
+      NETWORKS: 1    # Connect to networks
+      INFO: 1        # Version check
       VERSION: 1
-      EXEC: 1       # Run commands (exec)
-      EVENTS: 1     # Listen for events (if needed)
+      EXEC: 1        # Run commands (exec)
+      EVENTS: 1      # Listen for events (if needed)
 
   searxng:
     build:
